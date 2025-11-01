@@ -70,6 +70,10 @@ std::string get_permissions_string(const struct stat& st) {
     return permissions_to_string(st.st_mode);
 }
 
+unsigned long long get_hardlink_count(const struct stat& st) {
+    return static_cast<unsigned long long>(st.st_nlink);
+}
+
 int main(int argc, char* argv[]) {
     if (argc != 3) {
         std::cerr << "Usage: directory_analyzer <file_name> <directory_name>\n";
@@ -84,11 +88,12 @@ int main(int argc, char* argv[]) {
 
     struct stat st = stat_or_throw(path_str);
 
-    std::cout << "1) Absolute path:  " << file_path << std::endl;
-    std::cout << "2) File type:      " << get_file_type(st) << std::endl;
-    std::cout << "3) Permissions:    " << get_permissions_string(st) << std::endl;
-    std::cout << "4) Owner:          " << get_owner_name(st) << std::endl;
-    std::cout << "5) I-Node:         " << get_inode_number(st) << std::endl;
+    std::cout << "1) Absolute path:   " << file_path << std::endl;
+    std::cout << "2) File type:       " << get_file_type(st) << std::endl;
+    std::cout << "3) Permissions:     " << get_permissions_string(st) << std::endl;
+    std::cout << "4) Owner:           " << get_owner_name(st) << std::endl;
+    std::cout << "5) I-Node:          " << get_inode_number(st) << std::endl;
+    std::cout << "6) Hard link count: " << get_hardlink_count(st) << "\n";
 
     return 0;
 }
