@@ -104,7 +104,6 @@ std::vector<std::string> find_other_hardlinks_in_dir(
         struct stat st{};
 
         if (::lstat(candidate_abs.c_str(), &st) == -1) {
-            // Pomijamy wpisy z błędem, ale można też przerwać — zależnie od wymagań
             std::cerr << "Warning: lstat() failed for '" << candidate_abs
                       << "': " << std::strerror(errno) << "\n";
             continue;
