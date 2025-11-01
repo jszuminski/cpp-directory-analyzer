@@ -1,11 +1,14 @@
 #include <iostream>
 #include <string>
 #include <filesystem>
+#include <vector>
+#include <stdexcept>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <cerrno>
 #include <cstring>
 #include <pwd.h>
+#include <dirent.h>
 
 namespace fs = std::filesystem;
 
@@ -74,6 +77,66 @@ unsigned long long get_hardlink_count(const struct stat& st) {
     return static_cast<unsigned long long>(st.st_nlink);
 }
 
+inline bool is_dot_or_dotdot(const char* name) {
+    return (name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0')));
+}
+
+std::vector<std::string> find_other_hardlinks_in_dir(
+    const std::string& directory,
+    const struct stat& target_st,
+    const std::string& target_abs_path
+) {
+    std::vector<std::string> results;
+
+    DIR* dir = ::opendir(directory.c_str());
+    if (!dir) {
+        throw std::runtime_error("opendir() failed for '" + directory + "': " + std::strerror(errno));
+    }
+
+    // Upewnij się, że porównujesz ścieżki absolutne
+    const std::string dir_abs = fs::absolute(directory).string();
+
+    for (dirent* ent = ::readdir(dir); ent != nullptr; ent = ::readdir(dir)) {
+        if (is_dot_or_dotdot(ent->d_name)) continue;
+
+        fs::path candidate = fs::path(dir_abs) / ent->d_name;
+        std::string candidate_abs = fs::absolute(candidate).string();
+
+        // Pobierz stat kandydata (nie dereferencjonuj symlinków)
+        struct stat st{};
+        if (::lstat(candidate_abs.c_str(), &st) == -1) {
+            // Pomijamy wpisy z błędem, ale można też przerwać — zależnie od wymagań
+            std::cerr << "Warning: lstat() failed for '" << candidate_abs
+                      << "': " << std::strerror(errno) << "\n";
+            continue;
+        }
+
+        // Hard link to *dokładnie ten sam plik* => to samo (st_dev, st_ino).
+        if (st.st_dev == target_st.st_dev && st.st_ino == target_st.st_ino) {
+            // Pomijamy oryginalną ścieżkę (żeby wypisać tylko INNE nazwy)
+            if (candidate_abs != target_abs_path) {
+                results.push_back(candidate_abs);
+            }
+        }
+    }
+
+    ::closedir(dir);
+    return results;
+}
+
+void print_other_hardlinks(const std::vector<std::string>& links) {
+    if (links.empty()) {
+        std::cout << "7) Other hard links in directory: (none)\n";
+        return;
+    }
+
+    std::cout << "7) Other hard links in directory:\n";
+
+    for (const auto& p : links) {
+        std::cout << "   - " << p << "\n";
+    }
+}
+
 int main(int argc, char* argv[]) {
     if (argc != 3) {
         std::cerr << "Usage: directory_analyzer <file_name> <directory_name>\n";
@@ -94,6 +157,9 @@ int main(int argc, char* argv[]) {
     std::cout << "4) Owner:           " << get_owner_name(st) << std::endl;
     std::cout << "5) I-Node:          " << get_inode_number(st) << std::endl;
     std::cout << "6) Hard link count: " << get_hardlink_count(st) << "\n";
+
+    std::vector<std::string> links = find_other_hardlinks_in_dir(directory_name, st, path_str);
+    print_other_hardlinks(links);
 
     return 0;
 }
