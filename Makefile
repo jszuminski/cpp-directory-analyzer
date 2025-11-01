@@ -1,13 +1,13 @@
 CXX=clang++
 CXXFLAGS=-std=c++23 -Wall -Wextra
 
-all: app
+all: directory_analyzer
 
 app: src/main.cpp
-	$(CXX) $(CXXFLAGS) src/main.cpp -o app
+	$(CXX) $(CXXFLAGS) src/main.cpp -o directory_analyzer
 
-run: app
-	./app
+run: directory_analyzer
+	./directory_analyzer
 
 clean:
-	rm -f app
+	rm -f directory_analyzer
