@@ -93,7 +93,6 @@ std::vector<std::string> find_other_hardlinks_in_dir(
         throw std::runtime_error("opendir() failed for '" + directory + "': " + std::strerror(errno));
     }
 
-    // Upewnij się, że porównujesz ścieżki absolutne
     const std::string dir_abs = fs::absolute(directory).string();
 
     for (dirent* ent = ::readdir(dir); ent != nullptr; ent = ::readdir(dir)) {
@@ -102,8 +101,8 @@ std::vector<std::string> find_other_hardlinks_in_dir(
         fs::path candidate = fs::path(dir_abs) / ent->d_name;
         std::string candidate_abs = fs::absolute(candidate).string();
 
-        // Pobierz stat kandydata (nie dereferencjonuj symlinków)
         struct stat st{};
+
         if (::lstat(candidate_abs.c_str(), &st) == -1) {
             // Pomijamy wpisy z błędem, ale można też przerwać — zależnie od wymagań
             std::cerr << "Warning: lstat() failed for '" << candidate_abs
@@ -111,9 +110,7 @@ std::vector<std::string> find_other_hardlinks_in_dir(
             continue;
         }
 
-        // Hard link to *dokładnie ten sam plik* => to samo (st_dev, st_ino).
         if (st.st_dev == target_st.st_dev && st.st_ino == target_st.st_ino) {
-            // Pomijamy oryginalną ścieżkę (żeby wypisać tylko INNE nazwy)
             if (candidate_abs != target_abs_path) {
                 results.push_back(candidate_abs);
             }
