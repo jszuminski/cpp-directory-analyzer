@@ -141,7 +141,7 @@ int main(int argc, char* argv[]) {
     const std::string file_name = argv[1];
     const std::string directory_name = argv[2];
 
-    fs::path file_path = fs::absolute(fs::path(directory_name) / file_name);
+    const fs::path file_path = fs::absolute(fs::path(directory_name) / file_name);
     const std::string path_str = file_path.string();
 
     struct stat st = stat_or_throw(path_str);
