@@ -12,14 +12,13 @@
 
 namespace fs = std::filesystem;
 
-inline struct stat stat_or_throw(const std::string& path, bool follow_symlinks = false) {
+inline struct stat stat_or_throw(const std::string& path) {
     struct stat st{};
-    int rc = follow_symlinks ? ::stat(path.c_str(), &st)
-                             : ::lstat(path.c_str(), &st);
+    int rc = ::lstat(path.c_str(), &st);
 
     if (rc == -1) {
         throw std::runtime_error(
-            std::string(follow_symlinks ? "stat() failed for '" : "lstat() failed for '")
+            std::string("lstat() failed for '")
             + path + "': " + std::strerror(errno)
         );
     }
@@ -152,7 +151,7 @@ int main(int argc, char* argv[]) {
     std::cout << "3) Permissions:     " << get_permissions_string(st) << std::endl;
     std::cout << "4) Owner:           " << get_owner_name(st) << std::endl;
     std::cout << "5) I-Node:          " << get_inode_number(st) << std::endl;
-    std::cout << "6) Hard link count: " << get_hardlink_count(st) << "\n";
+    std::cout << "6) Hard link count: " << get_hardlink_count(st) << std::endl;
 
     std::vector<std::string> links = find_other_hardlinks_in_dir(directory_name, st, path_str);
     print_other_hardlinks(links);
