@@ -17,10 +17,8 @@ inline struct stat stat_or_throw(const std::string& path) {
     int rc = ::lstat(path.c_str(), &st);
 
     if (rc == -1) {
-        throw std::runtime_error(
-            std::string("lstat() failed for '")
-            + path + "': " + std::strerror(errno)
-        );
+        std::cerr << "File could not be found (lstat failed)" << std::endl;
+        exit(1);
     }
 
     return st;
@@ -88,8 +86,10 @@ std::vector<std::string> find_other_hardlinks_in_dir(
     std::vector<std::string> results;
 
     DIR* dir = ::opendir(directory.c_str());
+
     if (!dir) {
-        throw std::runtime_error("opendir() failed for '" + directory + "': " + std::strerror(errno));
+        std::cerr << "opendir() failed for '" + directory + "'" << std::endl;
+        exit(1);
     }
 
     const std::string dir_abs = fs::absolute(directory).string();
@@ -138,13 +138,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    const std::string file_name = argv[1];
-    const std::string directory_name = argv[2];
-
-    const fs::path file_path = fs::absolute(fs::path(directory_name) / file_name);
-    const std::string path_str = file_path.string();
-
-    struct stat st = stat_or_throw(path_str);
+    const std::string file_path = argv[1];
+    struct stat st = stat_or_throw(file_path);
 
     std::cout << "1) Absolute path:   " << file_path << std::endl;
     std::cout << "2) File type:       " << get_file_type(st) << std::endl;
