@@ -139,16 +139,19 @@ int main(int argc, char* argv[]) {
     }
 
     const std::string file_path = argv[1];
-    struct stat st = stat_or_throw(file_path);
+    const std::string directory_path = argv[2];
+    const std::string file_abs_path = fs::absolute(file_path).string();
 
-    std::cout << "1) Absolute path:   " << file_path << std::endl;
+    struct stat st = stat_or_throw(file_abs_path);
+
+    std::cout << "1) Absolute path:   " << file_abs_path << std::endl;
     std::cout << "2) File type:       " << get_file_type(st) << std::endl;
     std::cout << "3) Permissions:     " << get_permissions_string(st) << std::endl;
     std::cout << "4) Owner:           " << get_owner_name(st) << std::endl;
     std::cout << "5) I-Node:          " << get_inode_number(st) << std::endl;
     std::cout << "6) Hard link count: " << get_hardlink_count(st) << std::endl;
 
-    std::vector<std::string> links = find_other_hardlinks_in_dir(directory_name, st, path_str);
+    std::vector<std::string> links = find_other_hardlinks_in_dir(directory_path, st, file_abs_path);
     print_other_hardlinks(links);
 
     return 0;
